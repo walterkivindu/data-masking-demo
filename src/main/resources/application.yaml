@@ -1,0 +1,10 @@
+server:
+    port: ${SERVER_PORT}
+spring:
+    application:
+        name: data-masking-demo
+
+external:
+    auth:
+        api:
+            base-url: ${EXTERNAL_AUTH_API_BASE_URL}
