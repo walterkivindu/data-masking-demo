@@ -1,0 +1,10 @@
+server:
+    port: 0
+spring:
+    application:
+        name: data-masking-demo
+
+external:
+    auth:
+        api:
+            base-url: https://test-auth-service.example.com
