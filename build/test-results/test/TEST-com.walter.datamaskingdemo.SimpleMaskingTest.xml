@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.walter.datamaskingdemo.SimpleMaskingTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-04-15T13:54:17.850Z" hostname="MOMONDI-POSDEV" time="0.008">
+  <properties/>
+  <testcase name="testRegularUserSeesMaskedData()" classname="com.walter.datamaskingdemo.SimpleMaskingTest" time="0.003"/>
+  <testcase name="testAdminSeesUnmaskedData()" classname="com.walter.datamaskingdemo.SimpleMaskingTest" time="0.003"/>
+  <system-out><![CDATA[Regular user sees masked data: PASSED
+Masked email: Si***********.biz
+Masked phone: 1-7**************6442
+Masked zipcode: *********4
+Masked longitude: 81.-496
+ADMIN sees selective data: PASSED
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

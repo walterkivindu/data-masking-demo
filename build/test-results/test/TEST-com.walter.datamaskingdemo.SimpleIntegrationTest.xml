@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.walter.datamaskingdemo.SimpleIntegrationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-04-15T13:54:17.842Z" hostname="MOMONDI-POSDEV" time="0.008">
+  <properties/>
+  <testcase name="testRegularUserSeesMaskedData()" classname="com.walter.datamaskingdemo.SimpleIntegrationTest" time="0.003"/>
+  <testcase name="testOwnerSeesUnmaskedData()" classname="com.walter.datamaskingdemo.SimpleIntegrationTest" time="0.002"/>
+  <testcase name="testAdminSeesUnmaskedData()" classname="com.walter.datamaskingdemo.SimpleIntegrationTest" time="0.003"/>
+  <system-out><![CDATA[=== REGULAR USER TEST ===
+Original email: Sincere@april.biz
+Masked email: Si***********.biz
+Original phone: 1-770-736-8031 x56442
+Masked phone: 1-7**************6442
+Regular user test PASSED - masking is working!
+=== OWNER TEST ===
+Current user: Bret
+Record username: Bret
+Original email: Sincere@april.biz
+Result email: Sincere@april.biz
+Owner test PASSED - owner sees unmasked data!
+=== ADMIN USER TEST ===
+Original email: Sincere@april.biz
+Result email: Sincere@april.biz
+Original phone: 1-770-736-8031 x56442
+Result phone: 1-7**************6442
+Admin user test PASSED - admin sees selective data!
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
