@@ -11,4 +11,5 @@ public @interface Mask {
     int prefix() default 0;      // Show at start
     int suffix() default 0;      // Show at end
     char maskChar() default '*'; // Character to use
+    String[] allowedRoles() default {}; // Roles that can see unmasked data
 }

@@ -4,12 +4,18 @@ import com.walter.datamaskingdemo.annotation.masking.Mask;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -49,7 +55,7 @@ public Object maskFields(ProceedingJoinPoint joinPoint) throws Throwable {
         }
     }
 
-    private Object maskObjectFields(Object obj) {
+    public Object maskObjectFields(Object obj) {
         if (obj == null) return obj;
 
         Class<?> clazz = obj.getClass();
@@ -81,6 +87,16 @@ public Object maskFields(ProceedingJoinPoint joinPoint) throws Throwable {
             return declaredFields;
         });
 
+        // Get current user context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        Set<String> currentUserRoles = authentication != null ? 
+            authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(auth -> auth.startsWith("ROLE_") ? auth.substring(5) : auth)
+                .collect(Collectors.toSet()) : 
+            Set.of();
+
         // Process fields
         for (Field field : fields) {
             if (field.isAnnotationPresent(Mask.class)) {
@@ -89,16 +105,22 @@ public Object maskFields(ProceedingJoinPoint joinPoint) throws Throwable {
 
                     if (value instanceof String) {
                         Mask maskAnnotation = field.getAnnotation(Mask.class);
-                        String maskedValue = maskString((String) value,
-                                maskAnnotation.prefix(),
-                                maskAnnotation.suffix(),
-                                maskAnnotation.maskChar());
+                        
+                        // Check if masking should be applied
+                        boolean shouldMask = shouldApplyMasking(obj, currentUsername, currentUserRoles, maskAnnotation);
+                        
+                        if (shouldMask) {
+                            String maskedValue = maskString((String) value,
+                                    maskAnnotation.prefix(),
+                                    maskAnnotation.suffix(),
+                                    maskAnnotation.maskChar());
 
-                        // For records, create new instance
-                        if (clazz.isRecord()) {
-                            maskedObj = createMaskedRecordInstance(maskedObj, field.getName(), maskedValue);
-                        } else {
-                            field.set(obj, maskedValue);
+                            // For records, create new instance
+                            if (clazz.isRecord()) {
+                                maskedObj = createMaskedRecordInstance(maskedObj, field.getName(), maskedValue);
+                            } else {
+                                field.set(obj, maskedValue);
+                            }
                         }
                     }
                 } catch (Exception e) {
@@ -193,6 +215,59 @@ public Object maskFields(ProceedingJoinPoint joinPoint) throws Throwable {
             }
         }
         return false;
+    }
+
+    private boolean shouldApplyMasking(Object obj, String currentUsername, Set<String> currentUserRoles, Mask maskAnnotation) {
+        // If no authentication context, apply masking
+        if (currentUsername == null) {
+            return true;
+        }
+
+        // Check if user is the owner of the record first (owners always see unmasked data)
+        boolean isOwner = isRecordOwner(obj, currentUsername);
+        if (isOwner) {
+            return false;
+        }
+
+        // Get allowed roles
+        String[] allowedRoles = maskAnnotation.allowedRoles();
+        
+        // If no allowed roles specified, always mask (except owners which we already checked)
+        if (allowedRoles.length == 0) {
+            return true;
+        }
+
+        // Check if current user has any of the allowed roles
+        boolean hasAllowedRole = Arrays.stream(allowedRoles)
+                .anyMatch(currentUserRoles::contains);
+        
+        // Only mask if user doesn't have allowed roles
+        return !hasAllowedRole;
+    }
+
+    private boolean isRecordOwner(Object obj, String currentUsername) {
+        try {
+            // Check for 'id' field that matches the username
+            Field idField = obj.getClass().getDeclaredField("id");
+            idField.setAccessible(true);
+            Object idValue = idField.get(obj);
+            
+            // Check for 'username' field
+            try {
+                Field usernameField = obj.getClass().getDeclaredField("username");
+                usernameField.setAccessible(true);
+                Object usernameValue = usernameField.get(obj);
+                
+                // Owner if current username matches the record's username or id
+                return currentUsername.equals(usernameValue) || currentUsername.equals(idValue);
+            } catch (NoSuchFieldException e) {
+                // No username field, check if id matches username
+                return currentUsername.equals(idValue);
+            }
+        } catch (Exception e) {
+            // If we can't determine ownership, apply masking
+            return false;
+        }
     }
 
     private String maskString(String value, int prefix, int suffix, char maskChar) {
